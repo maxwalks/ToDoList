@@ -1,101 +1,197 @@
-import Image from "next/image";
+"use client"
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { CheckCircle2, Plus, ListTodo, Calendar, Flag } from "lucide-react";
+import { DropdownMenuContent, DropdownMenu, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Task } from "@types";
+import { getSession } from "next-auth/react";
 
-export default function Home() {
+export default function Home () {
+  const [list, setList] = useState<Task[]>([]);
+  const [item, setItem] = useState("");
+  const [priority, setPriority] = useState<"low" | "med" | "high">("med");
+  const [date, setDate] = useState<string>("");
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+  useEffect(() => {
+    const fetchSession = async () => {
+      const session = await getSession()
+      console.log(session)
+    }
+    fetchSession()
+  })
+
+  const handleSubmit = () => {
+    if (!item.trim()) return;
+    const newTask: Task = {
+      item,
+      priority,
+      date,
+    };
+    setList(prevList => [...prevList, newTask]);
+    setItem("");
+    setDate("");
+    setPriority("med");
+    setIsDialogOpen(false);
+  };
+
+  const handleRemoval = (id: number) => {
+    setList(list.filter((_, idx) => idx !== id));
+  };
+
+  const getPriorityColor = (priority: "low" | "med" | "high") => {
+    switch (priority) {
+      case "high": return "text-red-500";
+      case "med": return "text-yellow-500";
+      case "low": return "text-green-500";
+      default: return "text-gray-500";
+    }
+  };
+
+  const formatDate = (dateStr: string) => {
+    if (!dateStr) return "";
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  };
+
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 p-4 md:p-8">
+      <Card className="max-w-2xl mx-auto shadow-xl">
+        <CardHeader className="border-b bg-white/50 backdrop-blur-sm">
+          <CardTitle className="text-2xl font-bold text-center flex items-center justify-between px-4">
+            <div className="flex items-center gap-4">
+              <span className="flex items-center gap-2">
+                <ListTodo className="w-6 h-6 text-blue-500" />
+                Tasks
+              </span>
+            </div>
+            <Button
+              onClick={() => setIsDialogOpen(true)}
+              className="bg-blue-500 hover:bg-blue-600 text-white rounded-full"
+            >
+              <Plus className="w-5 h-5" />
+            </Button>
+          </CardTitle>
+        </CardHeader>
+        
+        <CardContent className="space-y-6 p-6">
+          {list.length === 0 ? (
+            <div className="text-center py-12 text-gray-500">
+              <div className="mb-4">
+                <ListTodo className="w-12 h-12 mx-auto text-gray-300" />
+              </div>
+              <p className="text-lg font-medium">Your task list is empty</p>
+            </div>
+          ) : (
+            <ul className="space-y-3">
+            {list.map((task, idx) => (
+              <li
+                key={idx}
+                className="group flex items-center gap-4 p-4 bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-all"
+              >
+                <button
+                  onClick={() => handleRemoval(idx)}
+                  className="flex-shrink-0"
+                >
+                  <CheckCircle2 className="w-6 h-6 text-gray-300 hover:text-blue-500 transition-colors" />
+                </button>
+                
+                <div className="flex-1 min-w-0">
+                  <p className="text-gray-900 font-medium truncate">{task.item}</p>
+                  <div className="flex items-center gap-3 mt-1 text-sm text-gray-500">
+                    <span className={`flex items-center gap-1 ${getPriorityColor(task.priority)}`}>
+                      <Flag className="w-4 h-4" />
+                      {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
+                    </span>
+                    {task.date && (
+                      <span className="flex items-center gap-1">
+                        <Calendar className="w-4 h-4" />
+                        {formatDate(task.date)}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
+          )}
+        </CardContent>
+      </Card>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-semibold">Add New Task</DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="task">Task Description</Label>
+              <Input
+                id="task"
+                placeholder="What needs to be done?"
+                onChange={(e) => setItem(e.target.value)}
+                value={item}
+                className="w-full"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Priority</Label>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="w-full justify-between">
+                    <span className="flex items-center gap-2">
+                      <Flag className={`w-4 h-4 ${getPriorityColor(priority)}`} />
+                      {priority.charAt(0).toUpperCase() + priority.slice(1)} Priority
+                    </span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-full">
+                  <DropdownMenuItem onClick={() => setPriority("high")} className="gap-2">
+                    <Flag className="w-4 h-4 text-red-500" /> High Priority
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setPriority("med")} className="gap-2">
+                    <Flag className="w-4 h-4 text-yellow-500" /> Medium Priority
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setPriority("low")} className="gap-2">
+                    <Flag className="w-4 h-4 text-green-500" /> Low Priority
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="date">Due Date</Label>
+              <Input
+                type="date"
+                id="date"
+                onChange={(e) => setDate(e.target.value)}
+                value={date}
+                className="w-full"
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleSubmit}
+              className="bg-blue-500 hover:bg-blue-600 text-white"
+              disabled={!item.trim()}
+            >
+              Add Task
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
