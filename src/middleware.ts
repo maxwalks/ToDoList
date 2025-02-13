@@ -8,10 +8,6 @@ export async function middleware(request: NextRequest) {
     secret: process.env.NEXTAUTH_SECRET,
     secureCookie: process.env.NODE_ENV === "production",
   });
-
-  console.log("Middleware token:", token);
-  console.log("Current URL:", request.nextUrl.pathname);
-
   if (!token && request.nextUrl.pathname === "/") {
     return NextResponse.redirect(new URL("/register", request.url));
   }
