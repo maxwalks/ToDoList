@@ -29,7 +29,7 @@ export default function Home () {
         setLoading(true);
         const session = await getSession()
         if (!session?.user) {
-          console.log("not logged in")
+          console.log("not logged in.")
           return;
         }
         setSession(session as Session | null)
