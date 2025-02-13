@@ -6,7 +6,7 @@ import { Task } from "@types"
 export async function addTask (task : Task) {
     try {
         const { item, priority, date, userId } = task
-        const docRef = await addDoc(collection(db, "tasks"), {
+        await addDoc(collection(db, "tasks"), {
             item,
             priority,
             date,
