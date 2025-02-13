@@ -11,6 +11,8 @@ import { Task, Session } from "@types";
 import { getSession, signOut } from "next-auth/react";
 import { addTask } from "@/utils/addTask";
 import { fetchTasks } from "@/utils/fetchTasks";
+import { deleteTask } from "@/utils/deleteTask";
+import { TaskSkeleton } from "@/components/TaskSkeleton";
 
 export default function Home () {
   const [list, setList] = useState<Task[]>([]);
@@ -19,21 +21,30 @@ export default function Home () {
   const [date, setDate] = useState<string>("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [session, setSession] = useState<Session | null>(null)
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchSessionAndTasks = async () => {
-      const session = await getSession()
-      if (!session?.user) {
-        console.log("not logged in")
-        return;
+      try {
+        setLoading(true);
+        const session = await getSession()
+        if (!session?.user) {
+          console.log("not logged in")
+          return;
+        }
+        setSession(session as Session | null)
+        const tasks = await fetchTasks(session.user as string)
+        if (!Array.isArray(tasks)) {
+          console.error(tasks.error);
+          return;
+        }
+        console.log(tasks)
+        setList(tasks)
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setLoading(false);
       }
-      setSession(session as Session | null)
-      const tasks = await fetchTasks(session.user as string)
-      if (!Array.isArray(tasks)) {
-        console.error(tasks.error);
-        return;
-      }
-      setList(tasks)
     }
     fetchSessionAndTasks()
   }, [])
@@ -61,8 +72,12 @@ export default function Home () {
     setIsDialogOpen(false);
   };
 
-  const handleRemoval = (id: number) => {
-    setList(list.filter((_, idx) => idx !== id));
+  const handleRemoval = async (id: string) => {
+    setList(list.filter(task => task.id !== id));
+    const res = await deleteTask(id)
+    if (res?.error) {
+      console.error(res.error)
+    }
   };
 
   const getPriorityColor = (priority: "low" | "med" | "high") => {
@@ -107,7 +122,9 @@ export default function Home () {
         </CardHeader>
         
         <CardContent className="space-y-6 p-6">
-          {list.length === 0 ? (
+          {loading ? (
+            <TaskSkeleton />
+          ) : list.length === 0 ? (
             <div className="text-center py-12 text-gray-500">
               <div className="mb-4">
                 <ListTodo className="w-12 h-12 mx-auto text-gray-300" />
@@ -122,7 +139,7 @@ export default function Home () {
                 className="group flex items-center gap-4 p-4 bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-all"
               >
                 <button
-                  onClick={() => handleRemoval(idx)}
+                  onClick={() => handleRemoval(task.id as string)}
                   className="flex-shrink-0"
                 >
                   <CheckCircle2 className="w-6 h-6 text-gray-300 hover:text-blue-500 transition-colors" />

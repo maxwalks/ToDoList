@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { UserPlus } from "lucide-react";
+import Link from "next/link";
 
 export default function Register() {
   const [username, setUsername] = useState("")
@@ -80,9 +81,9 @@ export default function Register() {
           </Button>
           <p className="text-center text-sm text-gray-500">
             Already have an account?{" "}
-            <a href="/login" className="text-blue-500 hover:underline">
+            <Link href="/login" className="text-blue-500 hover:underline">
               Login
-            </a>
+            </Link>
           </p>
         </CardContent>
       </Card>
