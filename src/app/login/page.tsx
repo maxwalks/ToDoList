@@ -11,7 +11,6 @@ import toast from "react-hot-toast";
 import { validateUsername, validatePassword } from "@/lib/validation";
 import { useRouter } from "next/navigation";
 import { LoadingButton } from "@/components/LoadingButton";
-import { Loader2 } from "lucide-react";
 
 export default function Login() {
   const [username, setUsername] = useState("")

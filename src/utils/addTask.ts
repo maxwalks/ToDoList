@@ -1,4 +1,3 @@
-"use server"
 import { db } from "@/lib/firebase"
 import { collection, addDoc } from "firebase/firestore"
 import { Task } from "@types"

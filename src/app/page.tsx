@@ -7,12 +7,13 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { Label } from "@/components/ui/label";
 import { CheckCircle2, Plus, ListTodo, Calendar, Flag } from "lucide-react";
 import { DropdownMenuContent, DropdownMenu, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Task, Session } from "@types";
-import { getSession, signOut } from "next-auth/react";
+import { Task, UserSession } from "@types";
+import { signOut, useSession } from "next-auth/react";
 import { addTask } from "@/utils/addTask";
 import { fetchTasks } from "@/utils/fetchTasks";
 import { deleteTask } from "@/utils/deleteTask";
 import { TaskSkeleton } from "@/components/TaskSkeleton";
+import toast from "react-hot-toast";
 
 export default function Home () {
   const [list, setList] = useState<Task[]>([]);
@@ -20,20 +21,17 @@ export default function Home () {
   const [priority, setPriority] = useState<"low" | "med" | "high">("med");
   const [date, setDate] = useState<string>("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [session, setSession] = useState<Session | null>(null)
+  const [userSession, setUserSession] = useState<UserSession | null>(null)
   const [loading, setLoading] = useState(true);
+  const [isDataLoaded, setIsDataLoaded] = useState(false)
+  const { data: session, status } = useSession()
 
   useEffect(() => {
-    const fetchSessionAndTasks = async () => {
+    const loadTasks = async () => {
       try {
-        setLoading(true);
-        const session = await getSession()
-        if (!session?.user) {
-          console.log("not logged in.")
-          return;
-        }
-        setSession(session as Session | null)
-        const tasks = await fetchTasks(session.user as string)
+        setLoading(true)
+        if (isDataLoaded == true) return; 
+        const tasks = await fetchTasks(session?.user as string)
         if (!Array.isArray(tasks)) {
           console.error(tasks.error);
           return;
@@ -41,13 +39,23 @@ export default function Home () {
         console.log(tasks)
         setList(tasks)
       } catch (error) {
-        console.error(error);
+        console.error(error)
+        if (error instanceof Error) {
+          toast.error(error.message)
+        } else {
+          toast.error("An unexpected error occurred")
+        }
       } finally {
-        setLoading(false);
+        setIsDataLoaded(true)
+        setLoading(false)
       }
+    } 
+
+    setUserSession({ session: { user: session?.user as string, expires: session?.expires as string }, status: status })
+    if (status == "authenticated") {
+      loadTasks()
     }
-    fetchSessionAndTasks()
-  }, [])
+  }, [session, status])
 
   const handleSubmit = async () => {
     if (!item.trim()) return;
@@ -60,7 +68,7 @@ export default function Home () {
       item,
       priority,
       date,
-      userId: session.user,
+      userId: userSession?.session.user as string,
     };
 
     addTask(newTask)
