@@ -7,8 +7,10 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { Label } from "@/components/ui/label";
 import { CheckCircle2, Plus, ListTodo, Calendar, Flag } from "lucide-react";
 import { DropdownMenuContent, DropdownMenu, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Task } from "@types";
-import { getSession } from "next-auth/react";
+import { Task, Session } from "@types";
+import { getSession, signOut } from "next-auth/react";
+import { addTask } from "@/utils/addTask";
+import { fetchTasks } from "@/utils/fetchTasks";
 
 export default function Home () {
   const [list, setList] = useState<Task[]>([]);
@@ -16,23 +18,43 @@ export default function Home () {
   const [priority, setPriority] = useState<"low" | "med" | "high">("med");
   const [date, setDate] = useState<string>("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [session, setSession] = useState<Session | null>(null)
 
   useEffect(() => {
-    const fetchSession = async () => {
+    const fetchSessionAndTasks = async () => {
       const session = await getSession()
-      console.log(session)
+      if (!session?.user) {
+        console.log("not logged in")
+        return;
+      }
+      setSession(session as Session | null)
+      const tasks = await fetchTasks(session.user as string)
+      if (!Array.isArray(tasks)) {
+        console.error(tasks.error);
+        return;
+      }
+      setList(tasks)
     }
-    fetchSession()
-  })
+    fetchSessionAndTasks()
+  }, [])
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!item.trim()) return;
+    if (!session) {
+      console.error("User is not authenticated");
+      return;
+    }
+
     const newTask: Task = {
       item,
       priority,
       date,
+      userId: session.user,
     };
-    setList(prevList => [...prevList, newTask]);
+
+    addTask(newTask)
+
+    setList((prevList) => [...prevList, newTask]);
     setItem("");
     setDate("");
     setPriority("med");
@@ -58,7 +80,6 @@ export default function Home () {
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
 
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 p-4 md:p-8">
       <Card className="max-w-2xl mx-auto shadow-xl">
@@ -75,6 +96,12 @@ export default function Home () {
               className="bg-blue-500 hover:bg-blue-600 text-white rounded-full"
             >
               <Plus className="w-5 h-5" />
+            </Button>
+            <Button
+              onClick={() => signOut()}
+              className="bg-red-500 hover:bg-red-600 text-white rounded-full"
+            >
+              Sign Out
             </Button>
           </CardTitle>
         </CardHeader>

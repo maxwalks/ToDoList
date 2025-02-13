@@ -4,6 +4,7 @@ import { collection, getDocs, query, where } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { User } from "next-auth";
 import { AdapterUser } from "@auth/core/adapters";
+import bcrypt from "bcrypt"
 
 export const { auth, handlers, signIn, signOut } = NextAuth({
   providers: [
@@ -13,16 +14,24 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
         password: {},
       },
       authorize: async (credentials) => {
-        const { username, password } = credentials;
+        if (!credentials?.username || !credentials?.password) {
+          throw new Error("Missing credentials");
+        }
+
         try {
           const q = query(
             collection(db, "users"),
-            where("username", "==", username)
+            where("username", "==", credentials.username)
           );
           const snapshot = await getDocs(q);
           const userDoc = snapshot.docs[0];
-          const user = { id: userDoc.id, ...userDoc.data() };
-          console.log("query;", user);
+          const user = { id: userDoc.id, ...userDoc.data() } as { id: string, password: string }
+
+          const passwordMatch = await bcrypt.compare(credentials.password as string, user.password)
+          if (!passwordMatch) {
+            throw new Error("Incorrect username or password")
+          }
+
           return user;
         } catch (error) {
           console.error(error);

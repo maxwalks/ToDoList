@@ -11,7 +11,7 @@ export async function POST(request: NextRequest) {
     const docRef = await addDoc(collection(db, "users"), {
       username,
       email,
-      password,
+      password: hashedPassword,
       createdAt: new Date().toISOString(),
     });
 
