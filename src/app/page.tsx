@@ -15,7 +15,7 @@ import { deleteTask } from "@/utils/deleteTask";
 import { TaskSkeleton } from "@/components/TaskSkeleton";
 import toast from "react-hot-toast";
 
-export default function Home () {
+export default function HomePage() {
   const [list, setList] = useState<Task[]>([]);
   const [item, setItem] = useState("");
   const [priority, setPriority] = useState<"low" | "med" | "high">("med");
@@ -55,7 +55,7 @@ export default function Home () {
     if (status == "authenticated") {
       loadTasks()
     }
-  }, [session, status])
+  }, [session, status, isDataLoaded])
 
   const handleSubmit = async () => {
     if (!item.trim()) return;
