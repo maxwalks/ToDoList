@@ -7,12 +7,13 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { Label } from "@/components/ui/label";
 import { CheckCircle2, Plus, ListTodo, Calendar, Flag } from "lucide-react";
 import { DropdownMenuContent, DropdownMenu, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Task, UserSession } from "@types";
+import { Task } from "@types";
 import { signOut, useSession } from "next-auth/react";
 import { addTask } from "@/utils/addTask";
 import { fetchTasks } from "@/utils/fetchTasks";
 import { deleteTask } from "@/utils/deleteTask";
 import { TaskSkeleton } from "@/components/TaskSkeleton";
+import { AISuggestion } from "@/components/AISuggestion";
 import toast from "react-hot-toast";
 
 export default function HomePage() {
@@ -21,17 +22,16 @@ export default function HomePage() {
   const [priority, setPriority] = useState<"low" | "med" | "high">("med");
   const [date, setDate] = useState<string>("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [userSession, setUserSession] = useState<UserSession | null>(null)
   const [loading, setLoading] = useState(true);
-  const [isDataLoaded, setIsDataLoaded] = useState(false)
-  const { data: session, status } = useSession()
+  const [isDataLoaded, setIsDataLoaded] = useState(false);
+  const { data: session, status } = useSession();
 
   useEffect(() => {
     const loadTasks = async () => {
       try {
-        setLoading(true)
-        if (isDataLoaded == true) return; 
-        const tasks = await fetchTasks(session?.user as string)
+        setLoading(true);
+        if (isDataLoaded) return;
+        const tasks = await fetchTasks(session?.user as string);
         if (!Array.isArray(tasks)) {
           console.error(tasks.error);
           return;
@@ -49,26 +49,21 @@ export default function HomePage() {
         setIsDataLoaded(true)
         setLoading(false)
       }
-    } 
-
-    setUserSession({ session: { user: session?.user as string, expires: session?.expires as string }, status: status })
-    if (status == "authenticated") {
-      loadTasks()
+    };
+    
+    if (status === "authenticated") {
+      loadTasks();
     }
-  }, [session, status, isDataLoaded])
+  }, [session, status, isDataLoaded]);
 
   const handleSubmit = async () => {
-    if (!item.trim()) return;
-    if (!session) {
-      console.error("User is not authenticated");
-      return;
-    }
+    if (!item.trim() || !session?.user) return;
 
     const newTask: Task = {
       item,
       priority,
       date,
-      userId: userSession?.session.user as string,
+      userId: session.user,
     };
 
     addTask(newTask)
@@ -191,6 +186,7 @@ export default function HomePage() {
                 value={item}
                 className="w-full"
               />
+              <AISuggestion onSuggestionSelect={(suggestion) => setItem(suggestion)}/>
             </div>
 
             <div className="space-y-2">
